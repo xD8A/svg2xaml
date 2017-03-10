@@ -33,7 +33,8 @@ using System.Xml.Linq;
 
 namespace Svg2Xaml
 {
-  
+  using System.Diagnostics;
+
   //****************************************************************************
   /// <summary>
   ///   Base element for all container elements.
@@ -178,7 +179,9 @@ namespace Svg2Xaml
           break;
 
         default:
-          throw new NotImplementedException(String.Format("Unhandled element: {0}", element));
+          //throw new NotImplementedException(String.Format("Unhandled svg element: {0}", element));
+          Debug.WriteLine("Unhandled svg element: {0}", element);
+          break;
       }
     }
 

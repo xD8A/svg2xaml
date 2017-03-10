@@ -36,6 +36,7 @@ using System.Xml.Linq;
 
 namespace Svg2Xaml
 {
+  using System.Text;
 
   //****************************************************************************
   /// <summary>
@@ -49,7 +50,34 @@ namespace Svg2Xaml
     public SvgStyleElement(SvgDocument document, SvgBaseElement parent, XElement styleElement)
       : base(document, parent, styleElement)
     {
-      // ...
+      var cssLine = styleElement.Value.RemoveChars('\n', '\r', '\t');
+      var classesStyleTokens =
+        cssLine.Split(new[] { '{', '}' }, StringSplitOptions.RemoveEmptyEntries)
+          .Where(s => !string.IsNullOrEmpty(s.Trim())).ToArray();
+
+      if (classesStyleTokens.Length % 2 == 0)
+      {
+        for (var i = 1; i < classesStyleTokens.Length; i += 2)
+        {
+          var classesTokens = classesStyleTokens[i - 1].Split(new []{ ',' }, StringSplitOptions.RemoveEmptyEntries);
+          var styleTokens = classesStyleTokens[i].Split(new []{ ';' }, StringSplitOptions.RemoveEmptyEntries);
+          if (classesTokens.Length > 0 && classesStyleTokens.Length > 0)
+          {
+            foreach (var styleToken in styleTokens)
+            {
+              var styleKeyValue = styleToken.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
+              if (styleKeyValue.Length == 2)
+              {
+                foreach (var className in classesTokens)
+                {
+                  var dict = document.GetStylesForClass(className.Trim());
+                  dict.Add(styleKeyValue[0].Trim(), styleKeyValue[1].Trim());
+                }
+              }
+            }
+          }
+        }
+      }
     }
 
   } // class SvgStyleElement

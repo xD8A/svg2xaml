@@ -165,10 +165,15 @@ namespace Svg2Xaml
         else
         {
           List<SvgLength> lengths = new List<SvgLength>();
-          foreach(string length in stroke_dasharray_attribute.Value.Split(','))
+          var lengthTokens = stroke_dasharray_attribute.Value.Replace(";", "")
+            .Trim()
+            .Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries);
+          foreach (string length in lengthTokens)
+          {
             lengths.Add(SvgLength.Parse(length));
+          }
 
-          if(lengths.Count % 2 == 1)
+          if (lengths.Count % 2 == 1)
           {
             StrokeDasharray = new SvgLength[lengths.Count * 2];
             for(int i = 0; i < lengths.Count - 1; ++i)
@@ -389,6 +394,20 @@ namespace Svg2Xaml
       brush.Opacity = Opacity.ToDouble() * StrokeOpacity.ToDouble();
 
       Pen pen = new Pen(brush, StrokeWidth.ToDouble());
+      pen.MiterLimit = this.StrokeMiterlimit;
+
+      if (this.StrokeDasharray != null && this.StrokeDasharray.Length > 0)
+      {
+        var sda = new double[this.StrokeDasharray.Length];
+        var i = 0;
+        foreach (var svgLength in this.StrokeDasharray)
+        {
+          sda[i++] = svgLength.Value;
+        }
+
+        var sdo = this.StrokeDashoffset != null ? this.StrokeDashoffset.Value : 0.0;
+        pen.DashStyle = new DashStyle(sda, sdo);
+      }
 
       return pen;
     }
@@ -416,9 +435,7 @@ namespace Svg2Xaml
 
       if(geometry.IsEmpty())
         return null;
-      if(geometry.Bounds.Width <= 0.0)
-        return null;
-      if(geometry.Bounds.Height <= 0.0)
+      if(geometry.Bounds.Width <= 0.0 && geometry.Bounds.Height <= 0.0)
         return null;
 
       Brush brush = GetBrush();

@@ -56,7 +56,19 @@ namespace Svg2Xaml
     //==========================================================================
     public override Geometry GetBaseGeometry()
     {
-     return Geometry.Parse(Data).Clone();
+      var pfc = PathFigureCollection.Parse(Data);
+      if (this.Fill == null)
+      {
+        foreach (var pf in pfc)
+        {
+          pf.IsFilled = false;
+        }
+      }
+
+      var geo = new PathGeometry(pfc);
+      //var geo = SvgGeometryParser.ParseGeometry(Data, this.Fill != null);
+      //var geo = Geometry.Parse(Data).Clone();
+      return geo;
     }
 
   } // class SvgPathElement

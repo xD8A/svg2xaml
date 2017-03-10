@@ -32,7 +32,10 @@ using System.Xml.Linq;
 
 namespace Svg2Xaml
 {
-  
+  using System.Globalization;
+  using System.Windows;
+  using System.Xml;
+
   //****************************************************************************
   /// <summary>
   ///   Represents a &lt;tspan&gt; element.
@@ -41,13 +44,54 @@ namespace Svg2Xaml
     : SvgDrawableContainerBaseElement
   {
 
+    public readonly string Text;
+
+    public readonly SvgCoordinate X;
+
+    public readonly SvgCoordinate Y;
+
     //==========================================================================
     public SvgTSpanElement(SvgDocument document, SvgBaseElement parent, XElement svgElement)
       : base(document, parent, svgElement)
     {
-      // ...
+      if (svgElement.FirstNode != null && svgElement.FirstNode.NodeType == XmlNodeType.Text)
+      {
+        this.Text = svgElement.FirstNode.ToString();
+      }
+
+      var xAttr = svgElement.Attribute("x");
+      this.X = xAttr != null ? SvgCoordinate.Parse(xAttr.Value) : null;
+
+      var yAttr = svgElement.Attribute("y");
+      this.Y = yAttr != null ? SvgCoordinate.Parse(yAttr.Value) : null;
     }
 
+    public override Drawing Draw()
+    {
+      var dg = base.Draw() as DrawingGroup ?? new DrawingGroup();
+      var txt = this.Parent as SvgTextElement;
+      if (txt != null)
+      {
+        using (var dc = dg.Open())
+        {
+          var ft = new FormattedText(
+            this.Text,
+            CultureInfo.InvariantCulture,
+            FlowDirection.LeftToRight,
+            txt.Typeface,
+            txt.FontSize,
+            txt.Fill.ToBrush(txt));
+          var x = this.X != null ? this.X.Value : 0.0;
+          var y = this.Y != null ? this.Y.Value : 0.0;
+          var pt = new Point(x, y - ft.Baseline);
+          // Bei SVG scheint der Punkt die Basislinie des Textes zu meinen und
+          // bei WPF die obere linke Ecke. Daher dieser Hack.
+          dc.DrawText(ft, pt);
+        }
+      }
+
+      return dg;
+    }
   } // class SvgTSpanElement
 
 }

@@ -31,6 +31,9 @@ using System.Xml.Linq;
 
 namespace Svg2Xaml
 {
+  using System;
+  using System.Collections.Generic;
+  using System.Diagnostics;
 
   //****************************************************************************
   /// <summary>
@@ -70,10 +73,31 @@ namespace Svg2Xaml
       Parent   = parent;
 
       // Create attributes from styles...
-      XAttribute style_attribute = element.Attribute("style");
-      if(style_attribute != null)
+
+      // ... use element name as class ...
+      this.SetStyleAttributesForClasses(document, element, element.Name.LocalName);
+
+      // ... use id as class ...
+      var idAttribute = element.Attribute("id");
+      if (idAttribute != null)
       {
-        foreach(string property in style_attribute.Value.Split(';'))
+        this.SetStyleAttributesForClasses(document, element, "#" + idAttribute.Value.Trim());
+      }
+
+      // ... use class attribute ... 
+      var classAttribute = element.Attribute("class");
+      if (classAttribute != null)
+      {
+        var classNames = classAttribute.Value.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        classNames = Array.ConvertAll(classNames, className => "." + className);
+        this.SetStyleAttributesForClasses(document, element, classNames);
+      }
+
+      // ... use style attribute ... 
+      XAttribute styleAttribute = element.Attribute("style");
+      if(styleAttribute != null)
+      {
+        foreach(string property in styleAttribute.Value.Split(';'))
         {
           string[] tokens = property.Split(':');
           if(tokens.Length == 2)
@@ -81,27 +105,51 @@ namespace Svg2Xaml
             {
               element.SetAttributeValue(tokens[0], tokens[1]);
             }
-            catch(XmlException)
+            catch(XmlException ex)
             {
-              continue;
+              Debug.WriteLine(ex);
             }
         }
-        style_attribute.Remove();
+        styleAttribute.Remove();
       }
 
-      XAttribute id_attribute = element.Attribute("id");
-      if(id_attribute != null)
-        Document.Elements[Id = id_attribute.Value] = this;
+      if(idAttribute != null)
+        Document.Elements[Id = idAttribute.Value] = this;
 
-      XAttribute href_attribute = element.Attribute(XName.Get("href", "http://www.w3.org/1999/xlink"));
-      if(href_attribute != null)
+      XAttribute hrefAttribute = element.Attribute(XName.Get("href", "http://www.w3.org/1999/xlink"));
+      if(hrefAttribute != null)
       {
-        string reference = href_attribute.Value;
+        string reference = hrefAttribute.Value;
         if(reference.StartsWith("#"))
           Reference = reference.Substring(1);
       }
 
       Element = element;
+    }
+
+    private void SetStyleAttributesForClasses(SvgDocument document, XElement element, params string[] classes)
+    {
+      foreach (var className in classes)
+      {
+        IDictionary<string, string> dict;
+        if (document.StyleDictionary.TryGetValue(className, out dict))
+        {
+          if (dict != null)
+          {
+            foreach (var keyValue in dict)
+            {
+              try
+              {
+                element.SetAttributeValue(keyValue.Key, keyValue.Value);
+              }
+              catch (XmlException ex)
+              {
+                Debug.WriteLine(ex);
+              }
+            }
+          }
+        }
+      }
     }
 
   } // class SvgBaseElement

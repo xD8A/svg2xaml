@@ -32,6 +32,7 @@ using System.Xml.Linq;
 
 namespace Svg2Xaml
 {
+  using System.Windows.Markup;
 
   //****************************************************************************
   sealed class SvgDocument
@@ -42,10 +43,12 @@ namespace Svg2Xaml
     //==========================================================================
     public readonly SvgSVGElement    Root;
     public readonly SvgReaderOptions Options;
+    public readonly IDictionary<string, IDictionary<string, string>> StyleDictionary;
 
     //==========================================================================
     public SvgDocument(XElement root, SvgReaderOptions options)
     {
+      StyleDictionary = new Dictionary<string, IDictionary<string, string>>();
       Root    = new SvgSVGElement(this, null, root);
       Options = options;
     }
@@ -53,7 +56,22 @@ namespace Svg2Xaml
     //==========================================================================
     public DrawingImage Draw()
     {
-      return new DrawingImage(Root.Draw());
+      var drawing = Root.Draw();
+      var drawingImage = new DrawingImage(drawing);
+      //var xamlString = XamlWriter.Save(drawingImage);
+      return drawingImage;
+    }
+
+    public IDictionary<string, string> GetStylesForClass(string className)
+    {
+      IDictionary<string, string> result;
+      if (!this.StyleDictionary.TryGetValue(className, out result))
+      {
+        result = new Dictionary<string, string>();
+        this.StyleDictionary.Add(className, result);
+      }
+
+      return result;
     }
 
   } // class SvgDocument

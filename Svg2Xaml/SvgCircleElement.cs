@@ -78,10 +78,39 @@ namespace Svg2Xaml
     //==========================================================================
     public override Geometry GetBaseGeometry()
     {
-      return new EllipseGeometry(new Point(CenterX.ToDouble(), CenterY.ToDouble()), 
-                                 Radius.ToDouble(), Radius.ToDouble());
+      var eg = new EllipseGeometry(
+        new Point(CenterX.ToDouble(), 
+        CenterY.ToDouble()),
+        Radius.ToDouble(),
+        Radius.ToDouble());
+      return eg;
     }
 
+    public override Drawing GetBaseDrawing()
+    {
+      var bd = base.GetBaseDrawing();
+      var gd = bd as GeometryDrawing;
+      if (gd != null && gd.Brush != null)
+      {
+        if (this.Transform != null)
+        {
+          var tf = this.Transform.ToTransform();
+          if (gd.Brush.Transform != null)
+          {
+            var tg = new TransformGroup();
+            tg.Children.Add(gd.Brush.Transform);
+            tg.Children.Add(tf);
+            gd.Brush.Transform = tg;
+          }
+          else
+          {
+            gd.Brush.Transform = tf;
+          }
+        }
+      }
+
+      return bd;
+    }
   } // class SvgCircleElement
 
 }

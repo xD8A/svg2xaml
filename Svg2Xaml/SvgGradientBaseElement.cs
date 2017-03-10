@@ -140,7 +140,7 @@ namespace Svg2Xaml
       if(Transform != null)
         brush.Transform = Transform.ToTransform();
 
-      foreach(SvgStopElement stop in Stops)
+      foreach (SvgStopElement stop in Stops)
         brush.GradientStops.Add(stop.ToGradientStop());
 
       return brush;

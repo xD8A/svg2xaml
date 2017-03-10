@@ -26,10 +26,14 @@
 //  $LastChangedBy$
 //
 ////////////////////////////////////////////////////////////////////////////////
-using System.Windows.Media;
-using System.Xml.Linq;
-using System.Windows;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Effects;
+using System.Xml.Linq;
 
 namespace Svg2Xaml
 {
@@ -38,14 +42,26 @@ namespace Svg2Xaml
   class SvgDrawableContainerBaseElement
     : SvgContainerBaseElement
   {
+
     //==========================================================================
     public readonly SvgViewbox ViewBox = new SvgViewbox(new Rect(0, 0, 0, 0)); 
-    public readonly SvgLength    Opacity = new SvgLength(1.0);
-    public readonly SvgTransform Transform;
+    public readonly SvgLength Opacity = new SvgLength(1.0);
+    public readonly SvgLength FillOpacity = new SvgLength(1.0);
+    public readonly SvgLength StrokeOpacity = new SvgLength(1.0);
+    public readonly SvgTransform Transform = null;
+    public readonly SvgPaint Fill = new SvgColorPaint(new SvgColor(0, 0, 0));
+    public readonly SvgPaint Stroke = null; /* new SvgColorPaint(new SvgColor(0, 0, 0)); */
+    public readonly SvgLength StrokeWidth = new SvgLength(1);
+    public readonly SvgStrokeLinecap StrokeLinecap = SvgStrokeLinecap.Butt;
+    public readonly SvgStrokeLinejoin StrokeLinejoin = SvgStrokeLinejoin.Miter;
+    public readonly double StrokeMiterlimit = 4;     // Double.None = inherit
+    public readonly SvgLength StrokeDashoffset = new SvgLength(0);
+    public readonly SvgLength[] StrokeDasharray = null; // null = none, Length[0] = inherit
     public readonly SvgURL ClipPath = null;
     public readonly SvgURL Filter = null;
     public readonly SvgURL Mask = null;
-    public readonly SvgDisplay Display = SvgDisplay.Inline; 
+    public readonly SvgDisplay Display = SvgDisplay.Inline;
+    public readonly SvgFillRule FillRule = SvgFillRule.Nonzero;
 
     //==========================================================================
     public SvgDrawableContainerBaseElement(SvgDocument document, SvgBaseElement parent, XElement drawableContainerElement)
@@ -150,6 +166,152 @@ namespace Svg2Xaml
           default:
             throw new NotImplementedException();
         }
+
+      XAttribute fill_opacity_attribute = drawableContainerElement.Attribute("fill-opacity");
+      if (fill_opacity_attribute != null)
+        FillOpacity = SvgLength.Parse(fill_opacity_attribute.Value);
+
+      XAttribute stroke_opacity_attribute = drawableContainerElement.Attribute("stroke-opacity");
+      if (stroke_opacity_attribute != null)
+        StrokeOpacity = SvgLength.Parse(stroke_opacity_attribute.Value);
+
+      XAttribute fill_attribute = drawableContainerElement.Attribute("fill");
+      if (fill_attribute != null)
+        Fill = SvgPaint.Parse(fill_attribute.Value);
+
+      XAttribute stroke_attribute = drawableContainerElement.Attribute("stroke");
+      if (stroke_attribute != null)
+        Stroke = SvgPaint.Parse(stroke_attribute.Value);
+
+      XAttribute stroke_width_attribute = drawableContainerElement.Attribute("stroke-width");
+      if (stroke_width_attribute != null)
+        StrokeWidth = SvgLength.Parse(stroke_width_attribute.Value);
+
+      XAttribute stroke_linecap_attribute = drawableContainerElement.Attribute("stroke-linecap");
+      if (stroke_linecap_attribute != null)
+        switch (stroke_linecap_attribute.Value)
+        {
+          case "butt":
+            StrokeLinecap = SvgStrokeLinecap.Butt;
+            break;
+
+          case "round":
+            StrokeLinecap = SvgStrokeLinecap.Round;
+            break;
+
+          case "square":
+            StrokeLinecap = SvgStrokeLinecap.Square;
+            break;
+
+          case "inherit":
+            StrokeLinecap = SvgStrokeLinecap.Inherit;
+            break;
+
+          default:
+            throw new NotImplementedException();
+        }
+
+      XAttribute stroke_linejoin_attribute = drawableContainerElement.Attribute("stroke-linejoin");
+      if (stroke_linejoin_attribute != null)
+        switch (stroke_linejoin_attribute.Value)
+        {
+          case "miter":
+            StrokeLinejoin = SvgStrokeLinejoin.Miter;
+            break;
+
+          case "round":
+            StrokeLinejoin = SvgStrokeLinejoin.Round;
+            break;
+
+          case "bevel":
+            StrokeLinejoin = SvgStrokeLinejoin.Bevel;
+            break;
+
+          case "inherit":
+            StrokeLinejoin = SvgStrokeLinejoin.Inherit;
+            break;
+
+          default:
+            throw new NotSupportedException();
+        }
+
+      XAttribute stroke_miterlimit_attribute = drawableContainerElement.Attribute("stroke-miterlimit");
+      if (stroke_miterlimit_attribute != null)
+      {
+        if (stroke_miterlimit_attribute.Value == "inherit")
+          StrokeMiterlimit = Double.NaN;
+        else
+        {
+          double miterlimit = Double.Parse(stroke_miterlimit_attribute.Value, CultureInfo.InvariantCulture.NumberFormat);
+          //if(miterlimit < 1)
+          //throw new NotSupportedException("A miterlimit less than 1 is not supported.");
+          StrokeMiterlimit = miterlimit;
+        }
+      }
+
+      XAttribute stroke_dasharray_attribute = drawableContainerElement.Attribute("stroke-dasharray");
+      if (stroke_dasharray_attribute != null)
+      {
+        if (stroke_dasharray_attribute.Value == "none")
+          StrokeDasharray = null;
+        else if (stroke_dasharray_attribute.Value == "inherit")
+          StrokeDasharray = new SvgLength[0];
+        else
+        {
+          List<SvgLength> lengths = new List<SvgLength>();
+          var lengthTokens = stroke_dasharray_attribute.Value.Replace(";", "")
+            .Trim()
+            .Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries);
+          foreach (string length in lengthTokens)
+          {
+            lengths.Add(SvgLength.Parse(length));
+          }
+
+          if (lengths.Count % 2 == 1)
+          {
+            StrokeDasharray = new SvgLength[lengths.Count * 2];
+            for (int i = 0; i < lengths.Count - 1; ++i)
+            {
+              StrokeDasharray[i] = lengths[i];
+              StrokeDasharray[i + lengths.Count] = lengths[i];
+            }
+          }
+          else
+            StrokeDasharray = lengths.ToArray();
+
+        }
+      }
+
+      XAttribute stroke_dashoffset_attribute = drawableContainerElement.Attribute("stroke-dashoffset");
+      if (stroke_dashoffset_attribute != null)
+        StrokeDashoffset = SvgLength.Parse(stroke_dashoffset_attribute.Value);
+
+      XAttribute fill_rule_attribute = drawableContainerElement.Attribute("fill-rule");
+      if (fill_rule_attribute != null)
+        switch (fill_rule_attribute.Value)
+        {
+          case "nonzero":
+            FillRule = SvgFillRule.Nonzero;
+            break;
+
+          case "evenodd":
+            FillRule = SvgFillRule.Evenodd;
+            break;
+
+          case "inherit":
+            FillRule = SvgFillRule.Inherit;
+            break;
+
+          default:
+            throw new NotImplementedException();
+        }
+
+      // color, color-interpolation, color-rendering
+
+      // viewBox attribute
+      // preserveAspectRatio attribute
+
+      // overflow
 
     }
 

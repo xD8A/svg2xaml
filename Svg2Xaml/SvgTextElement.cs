@@ -55,6 +55,8 @@ namespace Svg2Xaml
 
     public readonly SvgCoordinate Y;
 
+    public readonly string TextAnchor;
+
     //==========================================================================
     public SvgTextElement(SvgDocument document, SvgBaseElement parent, XElement svgElement)
       : base(document, parent, svgElement)
@@ -82,6 +84,9 @@ namespace Svg2Xaml
 
       var wordSpacingAttr = svgElement.Attribute("word-spacing");
       var wordSpacingStr = wordSpacingAttr != null ? wordSpacingAttr.Value : "0px";
+      
+      var textAnchorAttr = svgElement.Attribute("text-anchor");
+      TextAnchor = textAnchorAttr != null ? textAnchorAttr.Value : "start";
 
       var xAttr = svgElement.Attribute("x");
       this.X = xAttr != null ? SvgCoordinate.Parse(xAttr.Value) : null;
@@ -127,7 +132,21 @@ namespace Svg2Xaml
             this.Fill.ToBrush(this));
           var x = this.X != null ? this.X.Value : 0.0;
           var y = this.Y != null ? this.Y.Value : 0.0;
-          var pt = new Point(x, y - ft.Baseline);
+          Point pt;
+          switch(TextAnchor)
+          { 
+            case "middle":
+              pt = new Point(x - ft.WidthIncludingTrailingWhitespace / 2, y - ft.Baseline);
+              break;
+            case "end":
+              pt = new Point(x - ft.WidthIncludingTrailingWhitespace, y - ft.Baseline);
+              break;
+            case "start":
+            case "inherit":
+            default:
+              pt = new Point(x, y - ft.Baseline);
+              break;
+        }
           // Bei SVG scheint der Punkt die Basislinie des Textes zu meinen und
           // bei WPF die obere linke Ecke. Daher dieser Hack.
           dc.DrawText(ft, pt);

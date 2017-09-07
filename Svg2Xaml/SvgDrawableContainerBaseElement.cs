@@ -350,8 +350,8 @@ namespace Svg2Xaml
       if(Transform != null)
         drawing_group.Transform = Transform.ToTransform();
 
-      //if (ViewBox != null)
-      //    drawing_group.Children.Add(ViewBox.Process());
+      if (ViewBox != null)
+          drawing_group.Children.Add(ViewBox.Process());
 
       foreach(SvgBaseElement child_element in Children)
       {

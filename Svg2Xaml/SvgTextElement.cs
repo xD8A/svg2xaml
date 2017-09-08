@@ -107,7 +107,7 @@ namespace Svg2Xaml
       {
         if (firstSubNode.NodeType == XmlNodeType.Text)
         {
-          this.Text = firstSubNode.ToString();
+          this.Text = ((XText)firstSubNode).Value;
         }
         else
         {

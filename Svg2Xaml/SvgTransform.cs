@@ -129,7 +129,7 @@ namespace Svg2Xaml
             int index = transform.IndexOf(")");
             if(index >= 0)
             {
-              transforms.Add(SvgScaleTransform.Parse(transform.Substring(0, index).Trim()));
+              transforms.Add(SvgRotateTransform.Parse(transform.Substring(0, index).Trim()));
               transform = transform.Substring(index + 1).TrimStart();
               continue;
             }

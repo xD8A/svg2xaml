@@ -42,17 +42,20 @@ namespace Svg2Xaml
   {
     //==========================================================================
     public readonly double Angle;
-
+    public readonly double CenterX;
+    public readonly double CenterY;
     //==========================================================================
-    public SvgRotateTransform(double angle)
+    public SvgRotateTransform(double angle,double centerX=0,double centerY=0)
     {
       Angle = angle;
+      CenterX = centerX;
+      CenterY = centerY;
     }
 
     //==========================================================================
     public override Transform ToTransform()
     {
-      return new RotateTransform(Angle);
+      return new RotateTransform(Angle,CenterX,CenterY);
     }
 
     //==========================================================================
@@ -62,7 +65,10 @@ namespace Svg2Xaml
 
       if(tokens.Length == 1)
         return new SvgRotateTransform(Double.Parse(tokens[0].Trim(), CultureInfo.InvariantCulture.NumberFormat));
-      
+      else if(tokens.Length == 3)
+        return new SvgRotateTransform(Double.Parse(tokens[0].Trim(), CultureInfo.InvariantCulture.NumberFormat),
+            Double.Parse(tokens[1].Trim(), CultureInfo.InvariantCulture.NumberFormat),
+            Double.Parse(tokens[2].Trim(), CultureInfo.InvariantCulture.NumberFormat));
       throw new NotSupportedException();
     }
 

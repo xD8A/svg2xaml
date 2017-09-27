@@ -44,7 +44,9 @@ namespace Svg2Xaml
   {
 
     //==========================================================================
-    public readonly SvgViewbox ViewBox = new SvgViewbox(new Rect(0, 0, 0, 0)); 
+    public readonly SvgViewbox ViewBox = new SvgViewbox(new Rect(0, 0, 0, 0));
+    public readonly SvgLength Width = null;
+    public readonly SvgLength Height = null;
     public readonly SvgLength Opacity = new SvgLength(1.0);
     public readonly SvgLength FillOpacity = new SvgLength(1.0);
     public readonly SvgLength StrokeOpacity = new SvgLength(1.0);
@@ -306,11 +308,35 @@ namespace Svg2Xaml
             throw new NotImplementedException();
         }
 
-      // color, color-interpolation, color-rendering
+            // color, color-interpolation, color-rendering
+            
+            XAttribute width_attribute = drawableContainerElement.Attribute("width");
+            if (width_attribute != null)
+                Width = SvgLength.Parse(width_attribute.Value);
+            XAttribute height_attribute = drawableContainerElement.Attribute("height");
+            if (height_attribute != null)
+                Height = SvgLength.Parse(height_attribute.Value);
 
-      // viewBox attribute
-      // preserveAspectRatio attribute
-
+            XAttribute preserveAspectRatio_attribute = drawableContainerElement.Attribute("preserveAspectRatio");
+            if (preserveAspectRatio_attribute != null)
+            {
+                switch (preserveAspectRatio_attribute.Value)
+                {
+                    case "none":
+                        if (Width != null && Height != null)
+                        {
+                            var scaleTransform = new SvgScaleTransform(
+                                Width.ToDouble() / ViewBox.Value.Width,
+                                Height.ToDouble() / ViewBox.Value.Height);
+                            Width.ToDouble();
+                            if (Transform == null)
+                                Transform = scaleTransform;
+                            else
+                                Transform = new SvgTransformGroup(new[] { Transform, scaleTransform });
+                        }
+                        break;
+                }
+            }
       // overflow
 
     }

@@ -38,6 +38,8 @@
     <PackageTags>svg xaml</PackageTags>
     <PackageLicenseExpression></PackageLicenseExpression>
     <PackageLicenseFile>COPYING</PackageLicenseFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
   
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

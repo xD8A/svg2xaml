@@ -33,7 +33,7 @@
     Title="Svg2XamlTest" 
     Height="400" 
     Width="400">
-  <Viewbox
+  <Viewbox>
     <Image x:Name="Image" MouseDown="Image_MouseEnter" />
   </Viewbox>
 </Window>

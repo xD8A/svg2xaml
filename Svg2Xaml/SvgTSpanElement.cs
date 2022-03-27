@@ -70,7 +70,7 @@ namespace Svg2Xaml
     {
       var dg = base.Draw() as DrawingGroup ?? new DrawingGroup();
       var txt = this.Parent as SvgTextElement;
-      if (txt != null)
+      if (txt != null && Text != null)
       {
         using (var dc = dg.Open())
         {

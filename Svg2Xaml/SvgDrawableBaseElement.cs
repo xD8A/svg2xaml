@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Xml.Linq;
@@ -58,6 +59,7 @@ namespace Svg2Xaml
     public readonly string ClipPath = null;
     public readonly string Filter = null;
     public readonly string Mask = null;
+    public readonly string Title = null;
     public readonly SvgDisplay Display = SvgDisplay.Inline;
     public readonly SvgFillRule FillRule = SvgFillRule.Nonzero;
 
@@ -349,6 +351,9 @@ namespace Svg2Xaml
                                   select element)
         switch(element.Name.LocalName)
         {
+          case "title":
+            Title = element.Value;
+            break;
           default:
             throw new NotImplementedException(String.Format("Unhandled element: {0}", element));
         }
@@ -456,7 +461,17 @@ namespace Svg2Xaml
           path_geometry.FillRule = System.Windows.Media.FillRule.Nonzero;
         geometry = path_geometry;
       }
+      if (Title != null)
+      {
+        geometry.SetTitle(Title);
+      }
+
       GeometryDrawing geometry_drawing = new GeometryDrawing(brush, pen, geometry);
+
+      if (Title != null)
+      {
+        geometry_drawing.SetTitle(Title);
+      }
 
       return geometry_drawing;
     }
@@ -497,7 +512,7 @@ namespace Svg2Xaml
       DrawingGroup drawing_group = new DrawingGroup();
       drawing_group.BitmapEffect = bitmap_effect;
       drawing_group.OpacityMask = opacity_mask;
-      drawing_group.Children.Add(drawing);
+      drawing_group.Children.Add(drawing); 
 
       return drawing_group;
     }

@@ -27,9 +27,12 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Markup;
+using System.Windows.Media;
 using Svg2Xaml;
 
 namespace Svg2XamlTest
@@ -40,7 +43,7 @@ namespace Svg2XamlTest
     : Window
   {
     //==========================================================================
-    private readonly string FileName = "test12.svg";
+    private readonly string FileName = "test13.svg";
 
     //==========================================================================
     public MainWindow()
@@ -51,6 +54,7 @@ namespace Svg2XamlTest
         //try
         {
           Image.Source = SvgReader.Load(stream);
+          Image.ToolTip = new ToolTip() { IsOpen = false };
         }
       /*
         catch(Exception exception)
@@ -62,6 +66,50 @@ namespace Svg2XamlTest
        * */
     }
 
+    private IEnumerable<Geometry> FindGeometryAt(Drawing drawing, Point point)
+    {
+      if (drawing is GeometryDrawing geometryDrawing)
+      {
+        var geometry = geometryDrawing.Geometry;
+        if (geometry != null && geometry.FillContains(point))
+        {
+          yield return geometry;
+        }
+      }
+      else if (drawing is DrawingGroup group)
+      {
+        foreach (var child in group.Children)
+        {
+          foreach (var childGeometry in FindGeometryAt(child, point))
+          {
+            yield return childGeometry;
+          }
+        }
+      }
+    }
+
+    private void Image_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+      if (e.Source is Image img)
+      {
+        var toolTip = ((ToolTip)img.ToolTip);
+        if (toolTip != null)
+        {
+          string title = null;
+          if (img.Source is DrawingImage drawing)
+          {
+            var point = e.GetPosition(img); 
+            foreach (var g in FindGeometryAt(drawing.Drawing, point))
+            {
+              var gTitle = g.GetTitle();
+              if (gTitle != null) title = gTitle;
+            }
+          }
+          toolTip.Content = title;
+          toolTip.IsOpen = !string.IsNullOrEmpty(title);
+        }
+      }
+    }
   } // class MainWindow
 
 }
